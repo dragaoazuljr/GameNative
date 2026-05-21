@@ -65,5 +65,8 @@ This data helps us understand which games work, how well they perform, and autom
 
 See our full [Privacy Policy](PrivacyPolicy/README.md) for more details.
 
+## Supporters
+Thank you to our [Ko-fi sponsors](https://ko-fi.com/gamenative) and [GitHub sponsors](https://github.com/sponsors/utkarshdalal?preview=true), including [CodeRabbit](https://coderabbit.link/gnative), 
+
 **Disclaimer: This software is intended for playing games that you legally own. Do not use this software for piracy or any other illegal purposes. The maintainer of this fork assumes no
 responsibility for misuse.**
