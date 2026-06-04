@@ -48,6 +48,14 @@ object CoreDriverDownloader {
         componentName: String,
         onProgress: (Float) -> Unit = {}
     ): File? = withContext(Dispatchers.IO) {
+        // Extract component ID from name (remove .zip extension)
+        val componentId = componentName.substringBeforeLast(".zip")
+
+        // Validate component exists in manifest first (for both legacy and modern variants)
+        val manifest = loadCoreDriverManifest(context)
+        val component = manifest.components.find { it.id == componentId }
+            ?: throw Exception("Core driver $componentId not found in $CORE_DRIVERS_MANIFEST_FILE")
+
         // Legacy variant: use bundled assets
         if (!BuildConfig.MODERN_ANDROID) {
             Timber.d("Legacy variant: Core driver $componentName will be extracted from bundled assets")
@@ -55,9 +63,6 @@ object CoreDriverDownloader {
         }
 
         // Modern variant: download from server
-        // Extract component ID from name (remove .zip extension)
-        val componentId = componentName.substringBeforeLast(".zip")
-
         // Check if already downloaded and cached
         val destFile = File(context.filesDir, "$CORE_DRIVERS_CACHE_DIR/$componentName")
         if (destFile.exists() && destFile.length() > 0) {
@@ -67,9 +72,6 @@ object CoreDriverDownloader {
 
         // Download from server using local manifest
         Timber.i("Downloading core driver: $componentName from server")
-        val manifest = loadCoreDriverManifest(context)
-        val component = manifest.components.find { it.id == componentId }
-            ?: throw Exception("Core driver $componentId not found in $CORE_DRIVERS_MANIFEST_FILE")
 
         destFile.parentFile?.mkdirs()
 

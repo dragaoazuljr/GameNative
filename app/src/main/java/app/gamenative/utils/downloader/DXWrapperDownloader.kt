@@ -48,6 +48,11 @@ object DXWrapperDownloader {
         componentId: String,
         onProgress: (Float) -> Unit = {}
     ): File? = withContext(Dispatchers.IO) {
+        // Validate component exists in manifest first (for both legacy and modern variants)
+        val manifest = loadDXWrapperManifest(context)
+        manifest.components.find { it.id == componentId }
+            ?: throw Exception("DXWrapper $componentId not found in $DXWRAPPER_MANIFEST_FILE")
+
         // Legacy variant: use bundled assets
         if (!BuildConfig.MODERN_ANDROID) {
             Timber.d("Legacy variant: DXWrapper $componentId will be extracted from bundled assets")
@@ -64,9 +69,6 @@ object DXWrapperDownloader {
 
         // Download from server using local manifest
         Timber.i("Downloading dxwrapper: $componentId from server")
-        val manifest = loadDXWrapperManifest(context)
-        val component = manifest.components.find { it.id == componentId }
-            ?: throw Exception("DXWrapper $componentId not found in $DXWRAPPER_MANIFEST_FILE")
 
         destFile.parentFile?.mkdirs()
 
@@ -77,7 +79,7 @@ object DXWrapperDownloader {
                 context = context,
                 onProgress = onProgress
             )
-            Timber.Forest.i("Successfully downloaded dxwrapper: $componentId")
+            Timber.i("Successfully downloaded dxwrapper: $componentId")
         } catch (e: Exception) {
             Timber.e(e, "Failed to download dxwrapper: $componentId")
             destFile.delete()

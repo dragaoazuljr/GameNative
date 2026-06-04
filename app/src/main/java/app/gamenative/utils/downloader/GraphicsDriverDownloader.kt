@@ -48,6 +48,11 @@ object GraphicsDriverDownloader {
         componentId: String,
         onProgress: (Float) -> Unit = {}
     ): File? = withContext(Dispatchers.IO) {
+        // Validate component exists in manifest first (for both legacy and modern variants)
+        val manifest = loadGraphicsDriverManifest(context)
+        val component = manifest.components.find { it.id == componentId }
+            ?: throw Exception("Graphics driver $componentId not found in $GRAPHICS_DRIVER_MANIFEST_FILE")
+
         // Legacy variant: use bundled assets
         if (!BuildConfig.MODERN_ANDROID) {
             Timber.d("Legacy variant: Graphics driver $componentId will be extracted from bundled assets")
@@ -56,9 +61,6 @@ object GraphicsDriverDownloader {
 
         // Modern variant: download from server
         // Check if already downloaded and cached
-        val manifest = loadGraphicsDriverManifest(context)
-        val component = manifest.components.find { it.id == componentId }
-            ?: throw Exception("Graphics driver $componentId not found in $GRAPHICS_DRIVER_MANIFEST_FILE")
 
         // Use the actual filename from manifest (handles .tar.xz case)
         val destFile = File(context.filesDir, "$GRAPHICS_DRIVER_CACHE_DIR/${component.name}")

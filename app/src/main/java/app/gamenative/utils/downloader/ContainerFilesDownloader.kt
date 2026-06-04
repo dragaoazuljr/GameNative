@@ -49,6 +49,11 @@ object ContainerFilesDownloader {
         componentId: String,
         onProgress: (Float) -> Unit = {}
     ): File? = withContext(Dispatchers.IO) {
+        // Validate component exists in manifest first (for both legacy and modern variants)
+        val manifest = loadContainerFilesManifest(context)
+        val component = manifest.components.find { it.id == componentId }
+            ?: throw Exception("Container file $componentId not found in $CONTAINER_FILES_MANIFEST_FILE")
+
         // Legacy variant: use bundled assets
         if (!BuildConfig.MODERN_ANDROID) {
             Timber.d("Legacy variant: Container file $componentId will be extracted from bundled assets")
@@ -65,9 +70,6 @@ object ContainerFilesDownloader {
 
         // Download from server using local manifest
         Timber.i("Downloading container file: $componentId from server")
-        val manifest = loadContainerFilesManifest(context)
-        val component = manifest.components.find { it.id == componentId }
-            ?: throw Exception("Container file $componentId not found in $CONTAINER_FILES_MANIFEST_FILE")
 
         destFile.parentFile?.mkdirs()
 

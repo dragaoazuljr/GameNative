@@ -48,6 +48,11 @@ object WinComponentDownloader {
         componentId: String,
         onProgress: (Float) -> Unit = {}
     ): File? = withContext(Dispatchers.IO) {
+        // Validate component exists in manifest first (for both legacy and modern variants)
+        val manifest = loadWinComponentManifest(context)
+        val component = manifest.components.find { it.id == componentId }
+            ?: throw Exception("WinComponent $componentId not found in $WINCOMPONENTS_MANIFEST_FILE")
+
         // Legacy variant: use bundled assets
         if (!BuildConfig.MODERN_ANDROID) {
             Timber.d("Legacy variant: WinComponent $componentId will be extracted from bundled assets")
@@ -65,9 +70,6 @@ object WinComponentDownloader {
 
         // Download from server using local manifest
         Timber.i("Downloading wincomponent: $componentId from server")
-        val manifest = loadWinComponentManifest(context)
-        val component = manifest.components.find { it.id == componentId }
-            ?: throw Exception("WinComponent $componentId not found in $WINCOMPONENTS_MANIFEST_FILE")
 
         destFile.parentFile?.mkdirs()
 

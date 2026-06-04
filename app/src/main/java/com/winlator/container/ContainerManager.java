@@ -285,7 +285,7 @@ public class ContainerManager {
      * @param destinationDir Directory where the prefix should be extracted
      * @return true if extraction succeeded, false otherwise
      */
-    public static boolean extractPrefixPack(String wineInstallPath, File destinationDir) {
+    private static boolean extractPrefixPack(String wineInstallPath, File destinationDir) {
         if (wineInstallPath == null || wineInstallPath.isEmpty()) {
             return false;
         }
@@ -304,7 +304,7 @@ public class ContainerManager {
         return false;
     }
 
-    public void deleteCommonDlls(String dstName,
+    private void deleteCommonDlls(String dstName,
                                   JSONObject commonDlls,
                                   File containerDir) throws JSONException {
         // Get the list of DLL names for the given destination folder
@@ -326,7 +326,7 @@ public class ContainerManager {
         }
     }
 
-    public void extractCommonDlls(String srcName, String dstName, JSONObject commonDlls, File containerDir, OnExtractFileListener onExtractFileListener) throws JSONException {
+    private void extractCommonDlls(String srcName, String dstName, JSONObject commonDlls, File containerDir, OnExtractFileListener onExtractFileListener) throws JSONException {
         File srcDir = new File(ImageFs.find(context).getRootDir(), "/opt/wine/lib/wine/"+srcName);
         JSONArray dlnames = commonDlls.getJSONArray(dstName);
 
@@ -341,7 +341,7 @@ public class ContainerManager {
         }
     }
 
-    public void extractCommonDlls(WineInfo wineInfo, String srcName, String dstName, File containerDir, OnExtractFileListener onExtractFileListener) throws JSONException {
+    private void extractCommonDlls(WineInfo wineInfo, String srcName, String dstName, File containerDir, OnExtractFileListener onExtractFileListener) throws JSONException {
         Log.d("Extraction", "extracting common dlls for bionic: " + srcName);
         File srcDir = new File(wineInfo.path + "/lib/wine/" + srcName);
 
