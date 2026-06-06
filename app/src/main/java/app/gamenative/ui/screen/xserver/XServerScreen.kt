@@ -406,6 +406,7 @@ fun XServerScreen(
     var win32AppWorkarounds: Win32AppWorkarounds? by remember { mutableStateOf(null) }
     var physicalControllerHandler: PhysicalControllerHandler? by remember { mutableStateOf(null) }
     var exitWatchJob: Job? by remember { mutableStateOf(null) }
+    val keyboardEscMenuHandler = remember(scope) { KeyboardEscMenuHandler(scope) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -413,6 +414,7 @@ fun XServerScreen(
             physicalControllerHandler = null
             exitWatchJob?.cancel()
             exitWatchJob = null
+            keyboardEscMenuHandler.cancel()
         }
     }
     var isKeyboardVisible = false
@@ -1293,6 +1295,7 @@ fun XServerScreen(
         }
         val onKeyEvent: (AndroidEvent.KeyEvent) -> Boolean = {
             val isKeyboard = Keyboard.isKeyboardDevice(it.event.device)
+            val isPhysicalKeyboard = isKeyboard && it.event.device?.isVirtual != true
             val isGamepad = ExternalController.isGameController(it.event.device)
             val waitingForManualResume =
                 manualResumeMode &&
@@ -1314,11 +1317,16 @@ fun XServerScreen(
                     else -> false
                 }
             } else if ((showElementEditor || keepPausedForEditor || showQuickMenu || isEditMode) && (isGamepad || isKeyboard)) {
-                val escPressed = isKeyboard && !keepPausedForEditor && it.event.keyCode == KeyEvent.KEYCODE_ESCAPE &&
-                        it.event.action == KeyEvent.ACTION_DOWN &&
-                        it.event.repeatCount == 0
-                if (escPressed) {
-                    (context as? ComponentActivity)?.onBackPressedDispatcher?.onBackPressed()
+                val escOrBackPressed = !keepPausedForEditor &&
+                    (
+                        isKeyboard && it.event.keyCode == KeyEvent.KEYCODE_ESCAPE ||
+                            isPhysicalKeyboard && it.event.keyCode == KeyEvent.KEYCODE_BACK
+                        )
+                if (escOrBackPressed) {
+                    keyboardEscMenuHandler.handleOverlayEscOrBack(it.event, keyboard)
+                    if (it.event.action == KeyEvent.ACTION_DOWN && it.event.repeatCount == 0) {
+                        (context as? ComponentActivity)?.onBackPressedDispatcher?.onBackPressed()
+                    }
                     true
                 } else {
                     // Let Compose focus system handle keyboard and gamepad navigation/selection while menu is visible.
@@ -1335,13 +1343,22 @@ fun XServerScreen(
                 }
                 if (!handled && isKeyboard) {
                     val isShiftEscPressed = it.event.keyCode == KeyEvent.KEYCODE_ESCAPE &&
-                            it.event.isShiftPressed &&
-                            it.event.action == KeyEvent.ACTION_DOWN &&
-                            it.event.repeatCount == 0
+                        it.event.isShiftPressed &&
+                        it.event.action == KeyEvent.ACTION_DOWN &&
+                        it.event.repeatCount == 0
                     if (isShiftEscPressed &&
                         !showElementEditor && !keepPausedForEditor && !showQuickMenu && !isEditMode) {
+                        keyboardEscMenuHandler.cancel()
                         gameBack()
                         handled = true
+                    } else if (isPhysicalKeyboard && keyboardEscMenuHandler.isEscOrBack(it.event) &&
+                        !showElementEditor && !keepPausedForEditor && !showQuickMenu && !isEditMode) {
+                        handled = keyboardEscMenuHandler.handleGameEscOrBack(
+                            event = it.event,
+                            keyboard = keyboard,
+                            canOpenMenu = { !showElementEditor && !keepPausedForEditor && !showQuickMenu && !isEditMode },
+                            openMenu = gameBack,
+                        )
                     } else {
                         if (it.event.device?.isVirtual == true) {
                             handled = keyboard?.onVirtualKeyEvent(it.event) == true
