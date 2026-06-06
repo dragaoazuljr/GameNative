@@ -16,6 +16,8 @@ import com.winlator.xenvironment.EnvironmentComponent;
 import com.winlator.xenvironment.XEnvironment;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -68,12 +70,38 @@ public class PulseAudioComponent extends EnvironmentComponent {
         this.lowLatency = lowLatency;
     }
 
+    private void killAllPulseAudioProcesses() {
+        List<ProcessHelper.ProcessInfo> allProcesses = ProcessHelper.listSubProcesses();
+        List<Integer> pulsePids = new ArrayList<>();
+
+        for (ProcessHelper.ProcessInfo info : allProcesses) {
+            if (info.name.contains("libpulseaudio.so")) {
+                pulsePids.add(info.pid);
+            }
+        }
+
+        if (!pulsePids.isEmpty()) {
+            Timber.tag("PulseAudioComponent").w("Found %d pulseaudio process(es), killing: %s",
+                pulsePids.size(), pulsePids.toString());
+
+            for (int pid : pulsePids) {
+                ProcessHelper.killProcess(pid);
+            }
+
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 
     @Override
     public void start() {
         Timber.tag("PulseAudioComponent").d("Starting...");
         synchronized (lock) {
             if (pulseProcess == null) {
+                killAllPulseAudioProcesses();
                 pulseProcess = execPulseAudio();
                 isPaused.set(false);
             }
@@ -109,6 +137,8 @@ public class PulseAudioComponent extends EnvironmentComponent {
                 pulseProcess = null;
             }
             isPaused.set(false);
+
+            killAllPulseAudioProcesses();
         }
     }
 
