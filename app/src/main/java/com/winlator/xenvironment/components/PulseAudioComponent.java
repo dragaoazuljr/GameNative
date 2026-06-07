@@ -268,7 +268,7 @@ public class PulseAudioComponent extends EnvironmentComponent {
             attributesBuilder.setUsage(AudioAttributes.USAGE_GAME);
         }
 
-        AudioFocusRequest.Builder requestbuilder = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN);
+        AudioFocusRequest.Builder requestbuilder = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
         requestbuilder
             .setAudioAttributes(attributesBuilder.build())
             .setAcceptsDelayedFocusGain(true)
@@ -291,6 +291,9 @@ public class PulseAudioComponent extends EnvironmentComponent {
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                 Timber.tag("PulseAudioComponent").d("audioFocusChanged -> AUDIOFOCUS_LOSS_TRANSIENT");
                 updateSink(true);
+                break;
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                Timber.tag("PulseAudioComponent").d("audioFocusChanged -> AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK");
                 break;
         }
     }
