@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_shader_enable_title">Enable Custom Shaders</string>
+    <string name="settings_shader_enable_summary">Apply custom GLSL shaders to your games</string>
+    <string name="shader_search_hint">Search shaders...</string>
+    <string name="shader_loading">Loading shaders...</string>
+    <string name="shader_selector_title">Select Shader</string>
+    <string name="shader_apply">Apply Shader</string>
+    <string name="shader_apply_for_game">Apply for this game only</string>
+    <string name="shader_apply_global">Apply globally</string>
+    <string name="shader_compilation_failed">Shader compilation failed</string>
+    <string name="shader_no_shaders_found">No shaders found</string>
+    <string name="shader_favorite">Favorite</string>
+    <string name="shader_unfavorite">Unfavorite</string>
+    <string name="shader_apply_success">Shader applied successfully</string>
+</resources>
