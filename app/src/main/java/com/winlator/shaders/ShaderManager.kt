@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import java.io.File
 
 class ShaderManager(private val context: Context) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("shader_preferences", Context.MODE_PRIVATE)
+    val prefs: SharedPreferences = context.getSharedPreferences("shader_preferences", Context.MODE_PRIVATE)
 
     var shaderEnabled: Boolean
         get() = prefs.getBoolean("shaderEnabled", false)
@@ -57,6 +57,39 @@ class ShaderManager(private val context: Context) {
     fun loadShaders(dir: File): List<ShaderEntry> {
         return ShaderLoader.loadShaders(dir).map { entry ->
             entry.copy(isFavorite = isFavorite(entry.relativePath))
+        }
+    }
+
+    // ─── Methods for ShaderPreviewManager ───
+
+    /**
+     * Injects base uniforms (MVP + OutputSize) into fragment shader source if not already present.
+     * Called by ShaderPreviewManager for standalone shader compilation.
+     */
+    fun injectBaseUniforms(fragmentShader: String): String {
+        return if (!fragmentShader.contains("uniform mat4 MVP")) {
+            "uniform mat4 MVP;\nuniform vec4 OutputSize;\n" + fragmentShader
+        } else {
+            fragmentShader
+        }
+    }
+
+    /**
+     * Applies parameter values to a compiled shader program.
+     * Called by ShaderPreviewManager to update uniforms at runtime.
+     */
+    fun applyParamsToProgram(programId: Int, params: Map<String, Float>) {
+        if (programId <= 0) return
+        android.opengl.GLES20.glUseProgram(programId)
+        for ((name, value) in params.entries) {
+            val loc = android.opengl.GLES20.glGetUniformLocation(programId, name)
+            if (loc >= 0) {
+                android.opengl.GLES20.glUniform1f(loc, value)
+            }
+        }
+        // Restore previous program so the caller's state is preserved
+        if (android.opengl.GLES20.glGetError() != android.opengl.GLES20.GL_NO_ERROR) {
+            android.util.Log.e("ShaderManager", "Error applying params to program $programId")
         }
     }
 }

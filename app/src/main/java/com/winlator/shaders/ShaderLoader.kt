@@ -15,12 +15,12 @@ object ShaderLoader {
         if (!dir.exists() || !dir.isDirectory) return emptyList()
 
         return dir.walkTopDown()
-            .filter { it.isFile && (it.extension == "glsl" || it.extension == "cgp") }
+            .filter { it.isFile && (it.extension == "glsl" || it.extension == "cg" || it.extension == "frag" || it.extension == "vert") }
             .map { file ->
                 val relative = file.relativeTo(dir).path
                 val name = file.nameWithoutExtension
                 val content = file.readText()
-                val meta = com.winlator.shaders.ShaderParser.parseGlsl(content)
+                val meta = ShaderParser.parseGlsl(content)
 
                 ShaderEntry(
                     path = file.absolutePath,

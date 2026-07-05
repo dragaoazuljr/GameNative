@@ -49,4 +49,3 @@ class ShaderViewModel(application: Application) : AndroidViewModel(application) 
         return manager.shaderEnabled
     }
 }
-

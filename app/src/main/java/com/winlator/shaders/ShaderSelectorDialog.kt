@@ -1,5 +1,6 @@
 package com.winlator.shaders
 
+import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -21,6 +22,15 @@ import app.gamenative.R
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import java.io.File
+
+/**
+ * Static holder for ShaderEffectManager, used by ShaderSelectorDialog
+ * to access the manager without parceling.
+ * Set from XServerScreen or wherever the manager is instantiated.
+ */
+object ShaderEffectManagerHolder {
+    var current: ShaderEffectManager? = null
+}
 
 class ShaderSelectorDialog : BottomSheetDialogFragment() {
 
@@ -77,8 +87,11 @@ class ShaderSelectorDialog : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        shaderEffectManager = (requireActivity() as? ShaderSelectorHost)?.shaderEffectManager
-            ?: throw IllegalStateException("Activity must implement ShaderSelectorHost")
+
+        // Load ShaderEffectManager from static holder
+        shaderEffectManager = ShaderEffectManagerHolder.current
+            ?: throw IllegalStateException("ShaderEffectManager not initialized. Set ShaderEffectManagerHolder.current from the host.")
+
         viewModel.loadShaders()
 
         val behavior = (dialog as? com.google.android.material.bottomsheet.BottomSheetDialog)?.behavior
@@ -91,8 +104,3 @@ class ShaderSelectorDialog : BottomSheetDialogFragment() {
         dismiss()
     }
 }
-
-interface ShaderSelectorHost {
-    val shaderEffectManager: ShaderEffectManager?
-}
-

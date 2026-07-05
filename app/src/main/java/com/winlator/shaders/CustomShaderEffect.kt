@@ -30,7 +30,6 @@ class CustomShaderEffect(
     }
 
     override fun onUse(material: ShaderMaterial, renderer: GLRenderer) {
-        // Apply shader parameters as uniforms
         shaderEntry.meta?.params?.forEach { param ->
             material.setUniformFloat(param.name, param.initial)
         }
