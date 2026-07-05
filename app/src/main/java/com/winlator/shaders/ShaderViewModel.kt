@@ -10,18 +10,27 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
+/**
+ * ViewModel que delega todas as operações para ShaderEffectManagerHolder.
+ * Elimina duplicação de instância de ShaderManager (que antes era criada aqui).
+ */
 class ShaderViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _shaders = MutableLiveData<List<ShaderEntry>>(emptyList())
     val shaders: LiveData<List<ShaderEntry>> = _shaders
 
-    private val shaderDir = File(ShaderLoader.DEFAULT_SHADER_DIR)
-    private val manager: ShaderManager = ShaderManager(application)
+    /**
+     * Delega para o ShaderEffectManager singleton (já existente via holder).
+     * Evita criar uma nova instância de ShaderManager.
+     */
+    private val effectManager: ShaderEffectManager
+        get() = ShaderEffectManagerHolder.current
+            ?: throw IllegalStateException("ShaderEffectManager not initialized. Set ShaderEffectManagerHolder.current from the host.")
 
     fun loadShaders() {
         viewModelScope.launch {
             val loaded = withContext(Dispatchers.IO) {
-                manager.loadShaders(shaderDir)
+                effectManager.loadShaders()
             }
             _shaders.value = loaded
         }
@@ -33,6 +42,8 @@ class ShaderViewModel(application: Application) : AndroidViewModel(application) 
         val newFav = !entry.isFavorite
 
         viewModelScope.launch {
+            val manager = effectManager.shaderManagerInstance
+
             manager.toggleFavorite(relativePath)
 
             _shaders.value = current.map { e ->
@@ -42,10 +53,10 @@ class ShaderViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun toggleShaderEnabled(enabled: Boolean) {
-        manager.shaderEnabled = enabled
+        effectManager.onShaderEnabled(enabled)
     }
 
     fun getShaderEnabled(): Boolean {
-        return manager.shaderEnabled
+        return effectManager.isShaderEnabled()
     }
 }

@@ -24,6 +24,7 @@ import android.hardware.display.DisplayManager
 import android.hardware.input.InputManager
 import android.view.InputDevice
 import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.BackHandler
 import app.gamenative.BuildConfig
 import androidx.compose.foundation.background
@@ -158,6 +159,9 @@ import com.winlator.widget.TouchpadView
 import com.winlator.renderer.ASurfaceRenderer
 import com.winlator.renderer.GLRenderer
 import com.winlator.renderer.VulkanRenderer
+import com.winlator.shaders.ShaderEffectManager
+import com.winlator.shaders.ShaderEffectManagerHolder
+import com.winlator.shaders.ShaderSelectorDialog
 import com.winlator.widget.XServerRendererView
 import com.winlator.widget.XServerView
 import com.winlator.widget.XServerViewGL
@@ -468,6 +472,8 @@ fun XServerScreen(
     var showPlayingBlockedDialog by rememberSaveable { mutableStateOf(false) }
     var playingBlockedRemoteName by rememberSaveable { mutableStateOf<String?>(null) }
     var showTouchGestureDialog by remember { mutableStateOf(false) }
+    var showShaderSelectorDialog by remember { mutableStateOf(false) }
+    var shaderEffectManagerHolder: com.winlator.shaders.ShaderEffectManager? by remember { mutableStateOf(null) }
     var isTouchscreenModeActive by remember { mutableStateOf(container.isTouchscreenMode) }
     var currentGestureConfig by remember {
         mutableStateOf(app.gamenative.data.TouchGestureConfig.fromJson(container.getGestureConfig()))
@@ -1543,6 +1549,13 @@ fun XServerScreen(
             onDispose {
                 currentXServerViewAsView.removeOnAttachStateChangeListener(attachStateListener)
                 lifecycleOwner.lifecycle.removeObserver(observer)
+                // Cleanup shader effect manager if active
+                val sem = shaderEffectManagerHolder
+                if (sem != null) {
+                    sem.destroy()
+                }
+                shaderEffectManagerHolder = null
+                ShaderEffectManagerHolder.current = null
             }
         }
     }
@@ -1718,6 +1731,16 @@ fun XServerScreen(
             } else {
                 XServerView(context, xServerToUse, container.displayRenderer)
             }
+            // Wire ShaderEffectManager for GL renderer
+            if (useGLRenderer) {
+                val glR = (xServerViewInstance as? com.winlator.widget.XServerViewGL)?.renderer
+                if (glR != null) {
+                    shaderEffectManagerHolder = ShaderEffectManager(glR, context)
+                    glR.shaderEffectManager = shaderEffectManagerHolder
+                    ShaderEffectManagerHolder.current = shaderEffectManagerHolder
+                }
+            }
+
             val xServerView = xServerViewInstance.apply {
                 xServerView = this
                 setFrameRateLimit(if (fpsLimiterEnabled) fpsLimiterTarget else 0)
@@ -2538,6 +2561,7 @@ fun XServerScreen(
             hasPhysicalController = hasPhysicalController,
             isTouchscreenModeActive = isTouchscreenModeActive,
             onTouchGestureSettingsClick = { showTouchGestureDialog = true },
+            onOpenShaderSelector = { showShaderSelectorDialog = true },
             activeToggleIds = buildSet {
                 if (areControlsVisible) add(QuickMenuAction.INPUT_CONTROLS)
                 if (isTouchscreenModeActive) add(QuickMenuAction.TOUCHSCREEN_MODE)
@@ -2598,6 +2622,14 @@ fun XServerScreen(
     }
 
     // Element Editor Dialog
+    if (showShaderSelectorDialog) {
+        val fragmentActivity = context as? FragmentActivity
+        if (fragmentActivity != null) {
+            ShaderSelectorDialog().show(fragmentActivity.supportFragmentManager, "shader_selector")
+        }
+        showShaderSelectorDialog = false
+    }
+
     if (showElementEditor && elementToEdit != null && PluviaApp.inputControlsView != null) {
         app.gamenative.ui.component.dialog.ElementEditorDialog(
             element = elementToEdit!!,

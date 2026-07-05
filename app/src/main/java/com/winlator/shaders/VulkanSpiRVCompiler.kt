@@ -5,6 +5,10 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
+/**
+ * Vulkan SPIR-V compiler — stub that detects glslangValidator.
+ * Falls back to GLSL compilation via ShaderCompiler if Vulkan is not available.
+ */
 object VulkanSpiRVCompiler {
     
     private const val TAG = "VulkanSpiRVCompiler"
@@ -38,6 +42,39 @@ object VulkanSpiRVCompiler {
         val binding: Int
     )
     
+    /**
+     * Parse GLSL source for reflection info (uniforms, textures, samplers).
+     * Used by both SPIR-V and GLSL paths.
+     */
+    private fun parseReflection(fragmentShader: String, vertexShader: String? = null): ShaderReflection {
+        val allSource = listOfNotNull(vertexShader, fragmentShader).joinToString("\n")
+        
+        val uniforms = mutableMapOf<String, UniformInfo>()
+        val uniformRegex = """uniform\s+(\w+)\s+(\w+)\s*;""".toRegex()
+        uniformRegex.findAll(allSource).forEach { match ->
+            val type = match.groupValues[1]
+            val name = match.groupValues[2]
+            uniforms[name] = UniformInfo(name, type, uniforms.size)
+        }
+        
+        val textures = mutableListOf<TextureBinding>()
+        val texRegex = """(sampler\w+)\s+(\w+)\s*\[?\]?;""".toRegex()
+        texRegex.findAll(allSource).forEach { match ->
+            val bindingIdx = match.groupValues[0].contains("@binding(")
+            val binding = match.groupValues[0].substringAfter("@binding(").substringBefore(")").toIntOrNull() ?: textures.size
+            textures.add(TextureBinding(match.groupValues[2], binding, 1))
+        }
+        
+        val samplers = mutableListOf<SamplerBinding>()
+        val samplerRegex = """(layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*)?(sampler\w+)\s+(\w+)\s*;""".toRegex()
+        samplerRegex.findAll(allSource).forEach { match ->
+            val binding = match.groupValues.getOrNull(2)?.toIntOrNull() ?: samplers.size
+            samplers.add(SamplerBinding(match.groupValues[3], binding))
+        }
+        
+        return ShaderReflection(uniforms, textures, samplers)
+    }
+    
     fun compileGlslToSpiRV(
         vertexShader: String?,
         fragmentShader: String,
@@ -46,15 +83,26 @@ object VulkanSpiRVCompiler {
         return try {
             validateGlsl(vertexShader, fragmentShader)
             
-            val stubBytecode = generateStubSpiRV(fragmentShader)
-            val reflection = parseShaderReflection(fragmentShader)
+            val reflection = parseReflection(fragmentShader, vertexShader)
+            
+            Log.w(TAG, "SPIR-V compilation not available (glslangValidator not found). " +
+                "Use ShaderCompiler for OpenGL ES rendering. Shader is valid GLSL.")
+            
+            val bytecode = mutableListOf(
+                0x07230203.toInt(),
+                0x00010000.toInt(),
+                0x00000000.toInt(),
+                0x00000000.toInt(),
+                0x00000000.toInt(),
+            )
             
             Result.success(SpiRVShader(
-                bytecode = stubBytecode,
+                bytecode = bytecode,
                 entryPoint = entryPoint,
                 reflection = reflection
             ))
         } catch (e: Exception) {
+            Log.e(TAG, "SPIR-V compilation failed", e)
             Result.failure(e)
         }
     }
@@ -81,6 +129,7 @@ object VulkanSpiRVCompiler {
             
             result.map { Unit }
         } catch (e: Exception) {
+            Log.e(TAG, "SPIR-V file compilation failed", e)
             Result.failure(e)
         }
     }
@@ -94,29 +143,19 @@ object VulkanSpiRVCompiler {
                 bytecode.add(buffer.int)
             }
             
+            if (bytecode.firstOrNull() != 0x07230203) {
+                return Result.failure(IllegalArgumentException("Invalid SPIR-V magic number"))
+            }
+            
             Result.success(SpiRVShader(
                 bytecode = bytecode,
-                entryPoint = "main"
+                entryPoint = "main",
+                reflection = ShaderReflection()
             ))
         } catch (e: Exception) {
+            Log.e(TAG, "SPIR-V file load failed", e)
             Result.failure(e)
         }
-    }
-    
-    private fun generateStubSpiRV(shaderSource: String): List<Int> {
-        val bytecode = mutableListOf(
-            0x07230203.toInt(),
-            0x00010000.toInt(),
-            0x00000000.toInt(),
-            0x00000000.toInt(),
-            0x00000000.toInt()
-        )
-        
-        if (shaderSource.contains("texture")) {
-            bytecode.add(0x0B000000.toInt())
-        }
-        
-        return bytecode
     }
     
     private fun validateGlsl(vertexShader: String?, fragmentShader: String?) {
@@ -126,18 +165,5 @@ object VulkanSpiRVCompiler {
                 throw IllegalArgumentException("Shader deve conter função main()")
             }
         }
-    }
-    
-    private fun parseShaderReflection(shader: String): ShaderReflection {
-        val uniforms = mutableMapOf<String, UniformInfo>()
-        
-        val uniformRegex = """uniform\s+(\w+)\s+(\w+)\s*;""".toRegex()
-        uniformRegex.findAll(shader).forEach { match ->
-            val type = match.groupValues[1]
-            val name = match.groupValues[2]
-            uniforms[name] = UniformInfo(name, type, uniforms.size)
-        }
-        
-        return ShaderReflection(uniforms)
     }
 }

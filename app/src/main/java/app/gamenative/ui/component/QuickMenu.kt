@@ -266,6 +266,7 @@ fun QuickMenu(
     onLsfgFlowScaleChanged: (Float) -> Unit = {},
     onLsfgPerformanceModeChanged: (Boolean) -> Unit = {},
     onAnimationComplete: (Boolean) -> Unit = {},
+    onOpenShaderSelector: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val exitGameItem = QuickMenuItem(
@@ -609,6 +610,7 @@ fun QuickMenu(
                                                 modifier = Modifier.fillMaxSize(),
                                                 firstItemFocusRequester = effectsItemFocusRequester,
                                                 scrollState = effectsScrollState,
+                                                onOpenShaderSelector = onOpenShaderSelector,
                                             )
                                         } else if (glRenderer != null) {
                                             GLScreenEffectsTabContent(
@@ -617,6 +619,7 @@ fun QuickMenu(
                                                 modifier = Modifier.fillMaxSize(),
                                                 firstItemFocusRequester = effectsItemFocusRequester,
                                                 scrollState = effectsScrollState,
+                                                onOpenShaderSelector = onOpenShaderSelector,
                                             )
                                         } else {
                                             Box(

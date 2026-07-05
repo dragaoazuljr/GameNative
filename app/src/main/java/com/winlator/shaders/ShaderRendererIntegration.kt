@@ -71,14 +71,11 @@ class ShaderRendererIntegration {
         }
 
         override fun onDrawFrame(shaderProgram: ShaderProgram?) {
-            // Enable vertex attribute for position (layout location 0)
             setupFullscreenQuad()
 
             if (shaderProgram != null && shaderProgram.isCompiled) {
-                // Apply shader program
                 shaderProgram.use()
 
-                // Set MVP matrix (identity — can be overridden by subclasses)
                 val mvpMatrix = floatArrayOf(
                     1f, 0f, 0f, 0f,
                     0f, 1f, 0f, 0f,
@@ -87,15 +84,11 @@ class ShaderRendererIntegration {
                 )
                 shaderProgram.compiler.setUniformMatrix4f("MVP", mvpMatrix)
 
-                // Set OutputSize (resolution) for fragment shader
                 val outSize = floatArrayOf(width.toFloat(), height.toFloat(), 0f, 1f)
                 shaderProgram.compiler.setUniform("OutputSize", outSize[0], outSize[1], outSize[2], outSize[3])
             }
 
-            // Draw fullscreen quad (2 triangles = 6 vertices)
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
-
-            // Disable vertex attribute array
             GLES20.glDisableVertexAttribArray(0)
         }
 
@@ -170,4 +163,3 @@ class ShaderRendererIntegration {
         }
     }
 }
-

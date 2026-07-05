@@ -41,6 +41,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -224,6 +225,7 @@ fun GLScreenEffectsTabContent(
     container: Container? = null,
     firstItemFocusRequester: FocusRequester? = null,
     scrollState: ScrollState = rememberScrollState(),
+    onOpenShaderSelector: (() -> Unit) = {},
 ) {
     val initialConfig = remember(renderer, container) { loadScreenEffectsConfig(container) }
 
@@ -437,6 +439,15 @@ fun GLScreenEffectsTabContent(
         Spacer(modifier = Modifier.height(20.dp))
 
         ScreenEffectActionRow(
+            title = stringResource(R.string.screen_effects_custom_shader),
+            icon = Icons.Default.Palette,
+            accentColor = PluviaTheme.colors.accentPink,
+            onClick = onOpenShaderSelector,
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        ScreenEffectActionRow(
             title = stringResource(R.string.screen_effects_reset),
             icon = Icons.Default.RestartAlt,
             accentColor = PluviaTheme.colors.accentPurple,
@@ -454,6 +465,7 @@ fun ScreenEffectsTabContent(
     container: Container? = null,
     firstItemFocusRequester: FocusRequester? = null,
     scrollState: ScrollState = rememberScrollState(),
+    onOpenShaderSelector: (() -> Unit) = {},
 ) {
     val initialConfig = remember(renderer, container) { loadScreenEffectsConfig(container) }
 
