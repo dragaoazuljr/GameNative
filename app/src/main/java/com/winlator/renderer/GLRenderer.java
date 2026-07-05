@@ -15,6 +15,7 @@ import com.winlator.math.XForm;
 import com.winlator.renderer.material.CursorMaterial;
 import com.winlator.renderer.material.ShaderMaterial;
 import com.winlator.renderer.material.WindowMaterial;
+import com.winlator.shaders.ShaderEffectManager;
 import com.winlator.widget.FrameRating;
 import com.winlator.widget.XServerRendererView;
 import com.winlator.widget.XServerViewGL;
@@ -60,6 +61,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
     private int renderTargetHeightOverride = 0;
     private boolean sceneInitialized = false;
     private final EffectComposer effectComposer;
+    private ShaderEffectManager shaderEffectManager;
     private FrameRating frameRating;
 
     public GLRenderer(XServerViewGL xServerView, XServer xServer) {
@@ -519,5 +521,20 @@ public class GLRenderer implements GLSurfaceView.Renderer, WindowManager.OnWindo
 
     public void setFrameRating(FrameRating frameRating) {
         this.frameRating = frameRating;
+    }
+
+    public ShaderEffectManager getShaderEffectManager() {
+        return shaderEffectManager;
+    }
+
+    public void setShaderEffectManager(ShaderEffectManager mgr) {
+        this.shaderEffectManager = mgr;
+    }
+
+    public void destroyShaderManager() {
+        if (shaderEffectManager != null) {
+            shaderEffectManager.destroy();
+            shaderEffectManager = null;
+        }
     }
 }

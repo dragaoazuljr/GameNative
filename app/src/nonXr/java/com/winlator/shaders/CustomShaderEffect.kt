@@ -1,6 +1,7 @@
 package com.winlator.shaders
 
 import android.opengl.GLES20
+import java.io.File
 import com.winlator.renderer.GLRenderer
 import com.winlator.renderer.effects.Effect
 import com.winlator.renderer.material.ShaderMaterial
@@ -19,10 +20,12 @@ class CustomShaderEffect(
         }
     """.trimIndent()
 
+    private val fragmentShader: String by lazy { File(shaderEntry.path).readText() }
+
     override fun createMaterial(): ShaderMaterial {
         return object : ShaderMaterial() {
             override fun getVertexShader(): String = vertexShader
-            override fun getFragmentShader(): String = shaderEntry.path
+            override fun getFragmentShader(): String = fragmentShader
         }
     }
 

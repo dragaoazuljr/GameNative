@@ -9,19 +9,23 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Switch
 import android.widget.TextView
-import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import app.gamenative.R
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import java.io.File
 
 class ShaderSelectorDialog : BottomSheetDialogFragment() {
 
     private lateinit var viewModel: ShaderViewModel
+    private lateinit var shaderEffectManager: ShaderEffectManager
     private lateinit var recyclerView: RecyclerView
     private lateinit var searchField: EditText
     private lateinit var loadingText: TextView
@@ -63,6 +67,7 @@ class ShaderSelectorDialog : BottomSheetDialogFragment() {
             }
         })
 
+        enabledSwitch.isChecked = viewModel.getShaderEnabled()
         enabledSwitch.setOnCheckedChangeListener { _, isChecked ->
             viewModel.toggleShaderEnabled(isChecked)
         }
@@ -72,6 +77,8 @@ class ShaderSelectorDialog : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        shaderEffectManager = (requireActivity() as? ShaderSelectorHost)?.shaderEffectManager
+            ?: throw IllegalStateException("Activity must implement ShaderSelectorHost")
         viewModel.loadShaders()
 
         val behavior = (dialog as? com.google.android.material.bottomsheet.BottomSheetDialog)?.behavior
@@ -80,7 +87,12 @@ class ShaderSelectorDialog : BottomSheetDialogFragment() {
     }
 
     private fun onShaderSelected(shader: ShaderEntry) {
-        // TODO: Apply shader to current container
+        shaderEffectManager.onShaderSelected(shader)
         dismiss()
     }
 }
+
+interface ShaderSelectorHost {
+    val shaderEffectManager: ShaderEffectManager?
+}
+
